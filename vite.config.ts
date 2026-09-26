@@ -23,6 +23,7 @@ function viteApiDevPlugin(): Plugin {
                 } catch {}
               }
 
+              const origSetHeader = res.setHeader.bind(res);
               const vercelReq: any = Object.assign(req, { body });
               const vercelRes: any = Object.assign(res, {
                 status(code: number) {
@@ -30,11 +31,11 @@ function viteApiDevPlugin(): Plugin {
                   return vercelRes;
                 },
                 setHeader(name: string, value: string) {
-                  res.setHeader(name, value);
+                  origSetHeader(name, value);
                   return vercelRes;
                 },
                 json(data: any) {
-                  res.setHeader('Content-Type', 'application/json');
+                  origSetHeader('Content-Type', 'application/json');
                   res.end(JSON.stringify(data));
                   return vercelRes;
                 },
@@ -58,6 +59,11 @@ function viteApiDevPlugin(): Plugin {
 }
 
 export default defineConfig({
+  server: {
+    hmr: {
+      overlay: false,
+    },
+  },
   plugins: [viteApiDevPlugin()],
   test: {
     globals: true,
