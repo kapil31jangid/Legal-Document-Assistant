@@ -1,9 +1,4 @@
-import * as pdfjsLib from 'pdfjs-dist';
-import mammoth from 'mammoth';
 import { FileValidationResult } from './types';
-
-// Configure pdf.js worker URL dynamically
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version || '4.10.38'}/pdf.worker.min.mjs`;
 
 export const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 
@@ -55,6 +50,8 @@ export async function parseDocumentFile(file: File): Promise<string> {
 
     if (extension === 'docx') {
       const arrayBuffer = await file.arrayBuffer();
+      const mammothModule = await import('mammoth');
+      const mammoth = mammothModule.default || mammothModule;
       const result = await mammoth.extractRawText({ arrayBuffer });
       const extracted = result.value ? result.value.trim() : '';
       if (!extracted) {
@@ -65,6 +62,10 @@ export async function parseDocumentFile(file: File): Promise<string> {
 
     if (extension === 'pdf') {
       const arrayBuffer = await file.arrayBuffer();
+      const pdfjsLib = await import('pdfjs-dist');
+      if (pdfjsLib.GlobalWorkerOptions) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version || '4.10.38'}/pdf.worker.min.mjs`;
+      }
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
       if (pdf.numPages === 0) {

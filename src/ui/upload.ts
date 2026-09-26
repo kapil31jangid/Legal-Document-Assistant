@@ -73,7 +73,7 @@ export function createUploadComponent(options: UploadOptions): HTMLElement {
         <div style="margin-top: 1.25rem;">
           <button type="button" class="btn btn-dark browse-btn">Browse Files</button>
         </div>
-        <input type="file" id="file-input" accept=".pdf,.docx,.txt,.md" style="display: none;" />
+        <input type="file" id="file-input" accept=".pdf,.docx,.txt,.md" aria-label="Select contract document file to upload" style="display: none;" />
       </div>
       <div id="file-status" style="display: none; margin-top: 1rem; padding: 0.75rem 1rem; border-radius: var(--radius-md); font-size: 0.875rem;"></div>
     </div>
