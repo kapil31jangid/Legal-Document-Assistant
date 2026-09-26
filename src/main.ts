@@ -51,6 +51,21 @@ function updateURLPath(path: string) {
   }
 }
 
+/**
+ * Announces a message to screen readers via the ARIA live region.
+ */
+function announceToScreenReader(message: string, priority: 'polite' | 'assertive' = 'polite') {
+  const regionId = priority === 'assertive' ? 'aria-alert-region' : 'aria-live-region';
+  const region = document.getElementById(regionId);
+  if (region) {
+    region.textContent = '';
+    // Force re-announcement even for same message
+    setTimeout(() => {
+      region.textContent = message;
+    }, 50);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const appContainer = document.getElementById('app');
   if (!appContainer) return;
@@ -170,7 +185,9 @@ function renderApp(appContainer: HTMLElement) {
 
   const canvasContainer = document.createElement('main');
   canvasContainer.className = 'canvas-container';
-  canvasContainer.id = 'main-canvas-container';
+  canvasContainer.id = 'main-content'; // Target for skip-to-main link
+  canvasContainer.setAttribute('tabindex', '-1');
+  canvasContainer.setAttribute('aria-label', 'Main workspace content');
 
   appMain.appendChild(topHeader);
   appMain.appendChild(canvasContainer);
@@ -410,14 +427,16 @@ function renderMainView(container: HTMLElement) {
 async function processDocumentAI(container: HTMLElement) {
   const hashKey = simpleHash(currentDocumentText);
 
+  announceToScreenReader('Analyzing legal document with Gemini AI. Please wait...');
+
   container.innerHTML = `
-    <div class="card-widget" style="padding: 3rem; text-align: center;">
-      <div class="spinner" style="font-size: 2.5rem; margin-bottom: 1rem; color: var(--accent-blue);">⚙️</div>
+    <div class="card-widget" style="padding: 3rem; text-align: center;" role="status" aria-busy="true" aria-label="Analyzing document">
+      <div class="spinner" style="font-size: 2.5rem; margin-bottom: 1rem; color: var(--accent-blue);" aria-hidden="true">⚙️</div>
       <h3 style="font-size: 1.25rem; font-weight: 700;">Analyzing Legal Document with Gemini AI...</h3>
       <p style="color: var(--text-secondary); margin-top: 0.5rem; max-width: 600px; margin-left: auto; margin-right: auto;">
         Executing /api/analysis to extract executive metadata, score clause risk levels, and generate plain-language explanations.
       </p>
-      <div style="margin-top: 2rem;">
+      <div style="margin-top: 2rem;" aria-hidden="true">
         <div class="skeleton-box" style="height: 80px; width: 100%; margin-bottom: 1rem;"></div>
         <div class="skeleton-box" style="height: 60px; width: 100%;"></div>
       </div>

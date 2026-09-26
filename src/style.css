@@ -1,5 +1,62 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
+/* =============================================
+   ACCESSIBILITY UTILITIES
+   ============================================= */
+
+/* Skip to main content link - visible only on focus */
+.skip-to-main {
+  position: absolute;
+  top: -100%;
+  left: 1rem;
+  z-index: 9999;
+  padding: 0.75rem 1.25rem;
+  background: #0F172A;
+  color: #FFFFFF;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 0 0 8px 8px;
+  text-decoration: none;
+  transition: top 0.15s ease;
+}
+
+.skip-to-main:focus {
+  top: 0;
+  outline: 3px solid #2563EB;
+  outline-offset: 2px;
+}
+
+/* Screen-reader only text — visually hidden but accessible */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Improved focus ring for all interactive elements */
+:focus-visible {
+  outline: 3px solid #2563EB;
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* High-contrast focus for buttons */
+button:focus-visible,
+a:focus-visible,
+select:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid #2563EB;
+  outline-offset: 3px;
+}
+
 :root {
   --font-main: 'Inter', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
@@ -14,7 +71,7 @@
 
   --text-primary: #0F172A;        /* Slate-900 high contrast text */
   --text-secondary: #475569;      /* Slate-600 body text */
-  --text-muted: #94A3B8;          /* Slate-400 muted text */
+  --text-muted: #64748B;          /* Slate-500 muted text - WCAG AA compliant >=4.5:1 */
 
   /* Accents & Primary CTAs */
   --accent-blue: #2563EB;         /* Blue-600 primary highlight */

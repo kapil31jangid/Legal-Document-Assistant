@@ -1,16 +1,26 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { callGeminiJSON } from './_gemini';
+import { applySecurityMiddleware, sanitizeString, isNonEmptyString } from './_security';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const { blocked } = applySecurityMiddleware(req, res);
+  if (blocked) return;
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed. Use POST.' });
   }
 
   try {
-    const { documentA, documentB } = req.body || {};
+    const body = req.body || {};
+    const documentA = sanitizeString(body.documentA, 30_000);
+    const documentB = sanitizeString(body.documentB, 30_000);
 
-    if (!documentA || !documentB) {
+    if (!isNonEmptyString(documentA) || !isNonEmptyString(documentB)) {
       return res.status(400).json({ error: 'Both "documentA" and "documentB" are required for comparison.' });
+    }
+
+    if (documentA.length < 10 || documentB.length < 10) {
+      return res.status(400).json({ error: 'Both documents must contain meaningful content.' });
     }
 
     const systemPrompt = `You are a legal document comparison expert. 

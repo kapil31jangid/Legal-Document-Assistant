@@ -1,17 +1,32 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { callGeminiJSON } from './_gemini';
+import { applySecurityMiddleware, sanitizeString, isSafeArray, isNonEmptyString } from './_security';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const { blocked } = applySecurityMiddleware(req, res);
+  if (blocked) return;
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed. Use POST.' });
   }
 
   try {
-    const { documentText, clauses } = req.body || {};
+    const body = req.body || {};
+    const documentText = sanitizeString(body.documentText, 50_000);
+    const rawClauses = body.clauses;
 
-    if (!documentText) {
+    if (!isNonEmptyString(documentText)) {
       return res.status(400).json({ error: 'Missing "documentText" parameter.' });
     }
+
+    const clauses = isSafeArray(rawClauses, 100)
+      ? rawClauses.map((c: any) => ({
+          classification: c?.classification || null,
+          riskLevel: sanitizeString(c?.riskLevel, 10),
+          title: sanitizeString(c?.title, 200),
+          text: sanitizeString(c?.text, 500),
+        }))
+      : [];
 
     const systemPrompt = `You are an actionable legal audit assistant. 
 Synthesize the provided legal document and its flagged clauses into actionable output for the user:
@@ -19,9 +34,16 @@ Synthesize the provided legal document and its flagged clauses into actionable o
 2. Next Steps Checklist (prioritized tasks: HIGH, MEDIUM, LOW)
 3. Specific Questions to Ask a Lawyer before signing or agreeing.`;
 
-    const clausesContext = Array.isArray(clauses) && clauses.length > 0
-      ? `FLAGGED CLAUSES:\n` + clauses.map((c: any) => `- [Risk: ${c.classification?.riskLevel || c.riskLevel || 'Flagged'}] ${c.title || c.text?.slice(0, 100)}`).join('\n')
-      : '';
+    const clausesContext =
+      clauses.length > 0
+        ? `FLAGGED CLAUSES:\n` +
+          clauses
+            .map(
+              (c: any) =>
+                `- [Risk: ${c.classification?.riskLevel || c.riskLevel || 'Flagged'}] ${c.title || c.text?.slice(0, 100)}`
+            )
+            .join('\n')
+        : '';
 
     const userPrompt = `Analyze this legal document and generate actionable guidance:
 

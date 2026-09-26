@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { callGeminiJSON } from './_gemini';
+import { applySecurityMiddleware, sanitizeString, isSafeArray } from './_security';
 
 interface InputClause {
   id: string;
@@ -8,19 +9,31 @@ interface InputClause {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const { blocked } = applySecurityMiddleware(req, res);
+  if (blocked) return;
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed. Use POST.' });
   }
 
   try {
-    const { clauses } = req.body || {};
+    const body = req.body || {};
+    const rawClauses = body.clauses;
 
-    if (!Array.isArray(clauses) || clauses.length === 0) {
-      return res.status(400).json({ error: 'Parameter "clauses" must be a non-empty array.' });
+    if (!isSafeArray(rawClauses, 100) || rawClauses.length === 0) {
+      return res.status(400).json({ error: 'Parameter "clauses" must be a non-empty array (max 100 items).' });
     }
 
-    // Limit batch size to 25 clauses per call for speed and accuracy
-    const targetClauses: InputClause[] = clauses.slice(0, 25);
+    // Sanitize and limit each clause
+    const targetClauses: InputClause[] = rawClauses.slice(0, 25).map((c: any) => ({
+      id: sanitizeString(c?.id, 50),
+      text: sanitizeString(c?.text, 2_000),
+      ruleCheck: c?.ruleCheck || {},
+    })).filter((c: InputClause) => c.text.length > 0);
+
+    if (targetClauses.length === 0) {
+      return res.status(400).json({ error: 'No valid clause text provided.' });
+    }
 
     const systemPrompt = `You are a legal clause classifier and risk analyst.
 Classify each provided legal clause into one of the following categories:

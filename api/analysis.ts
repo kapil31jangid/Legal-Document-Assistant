@@ -1,17 +1,35 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { callGeminiJSON } from './_gemini';
+import { applySecurityMiddleware, sanitizeString, isSafeArray, isNonEmptyString } from './_security';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const { blocked } = applySecurityMiddleware(req, res);
+  if (blocked) return;
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed. Use POST.' });
   }
 
   try {
-    const { documentText, clauses } = req.body || {};
+    const body = req.body || {};
+    const documentText = sanitizeString(body.documentText, 50_000);
+    const rawClauses = body.clauses;
 
-    if (!documentText || typeof documentText !== 'string' || !documentText.trim()) {
+    if (!isNonEmptyString(documentText)) {
       return res.status(400).json({ error: 'Missing or empty "documentText" parameter.' });
     }
+
+    if (documentText.length < 10) {
+      return res.status(400).json({ error: 'Document text is too short to analyze.' });
+    }
+
+    const clauses = isSafeArray(rawClauses, 50)
+      ? rawClauses.slice(0, 20).map((c: any) => ({
+          id: sanitizeString(c?.id, 50),
+          text: sanitizeString(c?.text, 2000),
+          ruleCheck: c?.ruleCheck || {},
+        }))
+      : [];
 
     const systemPrompt = `You are an expert AI legal document analyst.
 Perform a full document analysis on the provided legal text:
@@ -19,12 +37,10 @@ Perform a full document analysis on the provided legal text:
 2. Generate plain-language explanations for sections.
 3. Classify clauses into Obligation/Risk/Right/Deadline/Neutral with LOW/MEDIUM/HIGH risk levels and clear reasons.`;
 
-    const formattedClauses = Array.isArray(clauses)
-      ? clauses
-          .slice(0, 20)
-          .map((c, i) => `Clause ${i + 1} (ID: ${c.id}): "${c.text}"`)
-          .join('\n\n')
-      : '';
+    const formattedClauses =
+      clauses.length > 0
+        ? clauses.map((c: any, i: number) => `Clause ${i + 1} (ID: ${c.id}): "${c.text}"`).join('\n\n')
+        : '';
 
     const userPrompt = `Analyze the following document:
 

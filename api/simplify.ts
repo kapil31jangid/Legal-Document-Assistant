@@ -1,17 +1,26 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { callGeminiJSON } from './_gemini';
+import { applySecurityMiddleware, sanitizeString, isNonEmptyString } from './_security';
 import { SimplifyResponsePayload } from '../src/lib/types';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const { blocked } = applySecurityMiddleware(req, res);
+  if (blocked) return;
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed. Use POST.' });
   }
 
   try {
-    const { text } = req.body || {};
+    const body = req.body || {};
+    const text = sanitizeString(body.text, 50_000);
 
-    if (!text || typeof text !== 'string' || text.trim().length === 0) {
+    if (!isNonEmptyString(text)) {
       return res.status(400).json({ error: 'Missing or empty "text" parameter.' });
+    }
+
+    if (text.length < 10) {
+      return res.status(400).json({ error: 'Document text is too short to simplify.' });
     }
 
     const systemPrompt = `You are an expert AI legal analyst and plain-language simplifier.

@@ -3,16 +3,45 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Legal Document Assistant - GenAI Legal Analysis & Risk Navigation</title>
-    <meta 
-      name="description" 
-      content="GenAI-powered web app helping users understand, compare, and navigate legal contracts and agreements with plain-language summaries and risk highlighting." 
+    <title>Legal Document Assistant - GenAI Legal Analysis &amp; Risk Navigation</title>
+    <meta
+      name="description"
+      content="GenAI-powered web app helping users understand, compare, and navigate legal contracts and agreements with plain-language summaries and risk highlighting."
     />
+    <meta name="theme-color" content="#0F172A" />
+    <meta name="robots" content="index, follow" />
+    <!-- Open Graph -->
+    <meta property="og:title" content="Legal Document Assistant" />
+    <meta property="og:description" content="AI-powered legal document analysis and risk navigation" />
+    <meta property="og:type" content="website" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   </head>
   <body>
-    <div id="app"></div>
+    <!-- Skip to main content (accessibility) -->
+    <a href="#main-content" class="skip-to-main" id="skip-to-main-link">
+      Skip to main content
+    </a>
+
+    <!-- ARIA live region for dynamic notifications (screen readers) -->
+    <div
+      id="aria-live-region"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      class="sr-only"
+    ></div>
+
+    <!-- ARIA alert region for errors (screen readers) -->
+    <div
+      id="aria-alert-region"
+      role="alert"
+      aria-live="assertive"
+      aria-atomic="true"
+      class="sr-only"
+    ></div>
+
+    <div id="app" role="application" aria-label="Legal Document Assistant"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
