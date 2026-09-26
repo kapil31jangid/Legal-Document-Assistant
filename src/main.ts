@@ -324,11 +324,14 @@ function renderMainView(container: HTMLElement) {
         });
 
         if (!response.ok) {
-          const err = await response.json();
-          throw new Error(err.error || 'Comparison failed.');
+          const err = await response.json().catch(() => ({ error: `Request failed with HTTP status ${response.status}.` }));
+          throw new Error(err.error || `Comparison endpoint returned HTTP ${response.status}.`);
         }
 
-        return (await response.json()) as ComparisonResult;
+        const data = await response.json().catch(() => {
+          throw new Error('Received an invalid non-JSON response from backend server.');
+        });
+        return data as ComparisonResult;
       },
     });
     container.appendChild(compareView);
@@ -369,11 +372,13 @@ function renderMainView(container: HTMLElement) {
         });
 
         if (!response.ok) {
-          const err = await response.json();
-          throw new Error(err.error || 'Chat request failed.');
+          const err = await response.json().catch(() => ({ error: `Chat request failed with HTTP status ${response.status}.` }));
+          throw new Error(err.error || `Chat API returned HTTP status ${response.status}.`);
         }
 
-        return await response.json();
+        return await response.json().catch(() => {
+          throw new Error('Received an invalid non-JSON response from server.');
+        });
       },
     });
     container.appendChild(chatPanel);
